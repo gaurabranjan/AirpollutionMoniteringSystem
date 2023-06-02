@@ -1,0 +1,122 @@
+To implement an air pollution monitoring system using NodeMCU and Blynk server, you'll need to follow these steps:
+
+1.Install the necessary libraries:
+	•	Install the Blynk library by going to Sketch -> Include Library -> Manage Libraries in the Arduino IDE and searching for "Blynk" to install it.
+	•	Install the Adafruit CCS811 library by going to Sketch -> Include Library -> Manage Libraries in the Arduino IDE and searching for "Adafruit CCS811" to install it.
+
+2.Set up Blynk:
+	•	Create a new Blynk project on the Blynk app (available for iOS and Android) and obtain an authentication token.
+	•	Add two widgets to the Blynk app: a Value Display widget for displaying the air quality index (AQI) and a Gauge widget for displaying the equivalent CO2 level.
+
+3.Connect the hardware:
+	•	Connect the CCS811 sensor to the NodeMCU board. The connections should be as follows:
+		o	CCS811 VIN pin to NodeMCU 3.3V pin
+		o	CCS811 GND pin to NodeMCU GND pin
+		o	CCS811 SDA pin to NodeMCU D2 pin
+		o	CCS811 SCL pin to NodeMCU D1 pin
+
+4.Use the following code as an example to implement the air pollution monitoring system using NodeMCU and Blynk server:
+
+------------------------------------------------------------------
+
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_CCS811.h>
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+// WiFi credentials
+char auth[] = "YOUR_AUTH_TOKEN";
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
+
+// Create an instance of the CCS811 sensor
+Adafruit_CCS811 ccs;
+
+// Blynk virtual pin numbers
+#define AQI_VIRTUAL_PIN V1
+#define CO2_VIRTUAL_PIN V2
+
+void setup()
+{
+  // Start the serial communication
+  Serial.begin(9600);
+
+  // Connect to the Wi-Fi network
+  Blynk.begin(auth, ssid, pass);
+
+  // Initialize the CCS811 sensor
+  if (!ccs.begin())
+  {
+    Serial.println("Failed to start CCS811 sensor! Check your wiring.");
+    while (1)
+      ;
+  }
+
+  // Wait for the sensor to be ready
+  while (!ccs.available())
+    ;
+
+  // Enable the CCS811 sensor
+  ccs.setDriveMode(CCS811_DRIVE_MODE_1SEC);
+}
+
+void loop()
+{
+  Blynk.run();
+
+  // Read the air quality data from the sensor
+  if (ccs.available())
+  {
+    if (!ccs.readData())
+    {
+      // Read the equivalent CO2 level from the sensor
+      float co2 = ccs.geteCO2();
+      
+      // Read the air quality index (AQI) from the sensor
+      float aqi = ccs.getTVOC();
+
+      // Send the data to Blynk app
+      Blynk.virtualWrite(AQI_VIRTUAL_PIN, aqi);
+      Blynk.virtualWrite(CO2_VIRTUAL_PIN, co2);
+
+      // Print the data to the serial monitor
+      Serial.print("eCO2: ");
+      Serial.print(co2);
+      Serial.print(" ppm\t");
+      Serial.print("TVOC: ");
+      Serial.print(aqi);
+      Serial.println(" ppb");
+    }
+    else
+    {
+      Serial.println("Failed to read data from CCS811 sensor!");
+    }
+  }
+
+  // Wait for 1 second before the next reading
+  delay(1000);
+}
+
+
+
+
+-----------------------------------------------------------------------
+
+
+In this code, we include the required libraries for Blynk, CCS811 sensor, and the ESP8266 WiFi module.
+
+Replace 'YOUR_AUTH_TOKEN' with the authentication token obtained from the Blynk project. Also, replace 'YOUR_WIFI_SSID' and 'YOUR_WIFI_PASSWORD' with your Wi-Fi network credentials.
+
+The setup() function initializes the serial communication, connects to the Wi-Fi network, and initializes the CCS811 sensor.
+
+The loop() function reads the air quality data from the sensor using the ccs.geteCO2() and ccs.getTVOC() functions. It then sends this data to the Blynk app using Blynk.virtualWrite() for the AQI and CO2 virtual pins. The data is also printed to the serial monitor for debugging purposes.
+
+Ensure that you have selected the correct board and port in the Arduino IDE before uploading the code to the NodeMCU board.
+
+After uploading the code, you can open the Blynk app and monitor the air quality index (AQI) and equivalent CO2 level on the Value Display and Gauge widgets respectively.
+
+
+
+
+
